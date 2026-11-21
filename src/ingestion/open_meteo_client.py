@@ -25,7 +25,12 @@ OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
 def build_session() -> requests.Session:
     session = requests.Session()
-    retries = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
+    retries = Retry(
+        total=2,
+        backoff_factor=1,
+        status_forcelist=[500, 502, 503, 504],
+        respect_retry_after_header=False,
+    )
     session.mount("https://", HTTPAdapter(max_retries=retries))
     return session
 
@@ -36,10 +41,18 @@ def fetch_city_weather(session: requests.Session, city: dict[str, Any]) -> dict[
         "longitude": city["lon"],
         "hourly": "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m",
         "timezone": "UTC",
+        "past_days": 5,
         "forecast_days": 2,
     }
-    response = session.get(OPEN_METEO_URL, params=params, timeout=15)
+    print(f"Lekérés indítása: {city['name']}...", flush=True)
+    response = session.get(
+        "https://api.open-meteo.com/v1/forecast",
+        params=params,
+        timeout=15,
+    )
     response.raise_for_status()
+    print(f"Kész: {city['name']} ({response.status_code})", flush=True)
+
     payload = response.json()
     payload["_metadata"] = {
         "city": city["name"],
@@ -48,7 +61,6 @@ def fetch_city_weather(session: requests.Session, city: dict[str, Any]) -> dict[
         "source": "open-meteo-forecast-v1",
     }
     return payload
-
 
 def run_ingestion(landing_path: str) -> None:
     session = build_session()
