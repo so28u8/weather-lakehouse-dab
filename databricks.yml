@@ -1,0 +1,20 @@
+bundle:
+  name: weather_lakehouse_dab
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog name
+    default: weather_dev
+  landing_volume_path:
+    description: Landing volume path for raw Open-Meteo JSON files
+    default: /Volumes/weather_dev/raw/landing
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-7405609007639441.1.azuredatabricks.net

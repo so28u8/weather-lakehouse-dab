@@ -1,0 +1,12 @@
+resources:
+  pipelines:
+    weather_medallion_pipeline:
+      name: "[${bundle.target}] Weather Medallion Pipeline"
+      catalog: ${var.catalog}
+      target: medallion
+      serverless: true
+      configuration:
+        landing_volume_path: ${var.landing_volume_path}
+      libraries:
+        - file:
+            path: ../src/pipelines/weather_medallion.py
