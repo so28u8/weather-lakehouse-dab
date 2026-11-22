@@ -16,3 +16,20 @@ resources:
             parameters:
               - "--landing-path"
               - "${var.landing_volume_path}"
+
+    air_quality_ingestion_job:
+      name: "[${bundle.target}] Air Quality API Ingestion"
+      environments:
+        - environment_key: default_python
+          spec:
+            client: "1"
+            dependencies:
+              - requests>=2.31.0
+      tasks:
+        - task_key: ingest_air_quality
+          environment_key: default_python
+          spark_python_task:
+            python_file: ../src/ingestion/air_quality_client.py
+            parameters:
+              - "--landing-path"
+              - "${var.air_quality_landing_volume_path}"

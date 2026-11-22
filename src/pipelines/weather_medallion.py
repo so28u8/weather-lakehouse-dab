@@ -1,7 +1,9 @@
 import dlt
 from pyspark.sql import functions as F
+from pyspark.sql.window import Window
 
 LANDING_PATH = spark.conf.get("landing_volume_path")
+AIR_QUALITY_LANDING_PATH = spark.conf.get("air_quality_landing_volume_path")
 
 
 @dlt.table(
@@ -69,6 +71,67 @@ dlt.apply_changes(
     target="weather_silver",
     source="weather_silver_staged",
     keys=["city", "forecast_time"],
+    sequence_by=F.col("ingested_at_utc"),
+    stored_as_scd_type=1,
+)
+
+@dlt.table(
+    name="air_quality_bronze",
+    comment="Raw Open-Meteo air quality JSON payloads ingested via Auto Loader.",
+)
+def air_quality_bronze():
+    return (
+        spark.readStream.format("cloudFiles")
+        .option("cloudFiles.format", "json")
+        .option("cloudFiles.inferColumnTypes", "true")
+        .load(AIR_QUALITY_LANDING_PATH)
+        .withColumn("_bronze_ingested_at", F.current_timestamp())
+    )
+
+
+@dlt.view(name="air_quality_silver_staged")
+@dlt.expect_all_or_drop({
+    "valid_city": "city IS NOT NULL",
+    "valid_timestamp": "forecast_timestamp IS NOT NULL",
+    "valid_pm2_5": "pm2_5 IS NULL OR pm2_5 >= 0",
+    "valid_pm10": "pm10 IS NULL OR pm10 >= 0",
+    "valid_aqi": "european_aqi IS NULL OR european_aqi >= 0",
+})
+def air_quality_silver_staged():
+    df = dlt.read_stream("air_quality_bronze")
+    zipped = F.arrays_zip(
+        F.col("hourly.time"),
+        F.col("hourly.pm10"),
+        F.col("hourly.pm2_5"),
+        F.col("hourly.nitrogen_dioxide"),
+        F.col("hourly.european_aqi"),
+    )
+    return (
+        df.withColumn("hourly_row", F.explode(zipped))
+        .select(
+            F.col("_metadata.city").alias("city"),
+            F.col("_metadata.country").alias("country"),
+            F.to_timestamp(F.col("hourly_row.time")).alias("forecast_timestamp"),
+            F.to_date(F.col("hourly_row.time")).alias("forecast_date"),
+            F.col("hourly_row.pm10").cast("double").alias("pm10"),
+            F.col("hourly_row.pm2_5").cast("double").alias("pm2_5"),
+            F.col("hourly_row.nitrogen_dioxide").cast("double").alias("nitrogen_dioxide"),
+            F.col("hourly_row.european_aqi").cast("double").alias("european_aqi"),
+            F.to_timestamp(F.col("_metadata.ingested_at_utc")).alias("ingested_at_utc"),
+        )
+    )
+
+
+dlt.create_streaming_table(
+    name="air_quality_silver",
+    comment="Deduplicated hourly air quality measurements (SCD Type 1).",
+    cluster_by=["city", "forecast_date"],
+)
+
+dlt.apply_changes(
+    target="air_quality_silver",
+    source="air_quality_silver_staged",
+    keys=["city", "forecast_timestamp"],
     sequence_by=F.col("ingested_at_utc"),
     stored_as_scd_type=1,
 )

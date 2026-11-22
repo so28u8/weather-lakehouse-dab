@@ -9,8 +9,11 @@ variables:
     description: Unity Catalog name
     default: weather_dev
   landing_volume_path:
-    description: Landing volume path for raw Open-Meteo JSON files
-    default: /Volumes/weather_dev/raw/landing
+    description: Landing volume path for raw Open-Meteo weather JSON files
+    default: /Volumes/weather_dev/raw/landing_weather
+  air_quality_landing_volume_path:
+    description: Landing volume path for raw Open-Meteo air quality JSON files
+    default: /Volumes/weather_dev/raw/landing_air_quality
 
 targets:
   dev:
