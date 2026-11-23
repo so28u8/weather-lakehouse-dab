@@ -41,8 +41,8 @@ def fetch_city_air_quality(session: requests.Session, city: dict[str, Any]) -> d
         "longitude": city["lon"],
         "hourly": "pm10,pm2_5,nitrogen_dioxide,european_aqi",
         "timezone": "UTC",
-        "past_days": 5,
-        "forecast_days": 2,
+        "past_days": 10,
+        "forecast_days": 1,
     }
     print(f"Air Quality lekérés indítása: {city['name']}...", flush=True)
     response = session.get(AIR_QUALITY_URL, params=params, timeout=(5, 15))

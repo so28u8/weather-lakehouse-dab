@@ -41,8 +41,8 @@ def fetch_city_weather(session: requests.Session, city: dict[str, Any]) -> dict[
         "longitude": city["lon"],
         "hourly": "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m",
         "timezone": "UTC",
-        "past_days": 5,
-        "forecast_days": 2,
+        "past_days": 10,
+        "forecast_days": 1,
     }
     print(f"Lekérés indítása: {city['name']}...", flush=True)
     response = session.get(
