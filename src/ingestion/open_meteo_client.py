@@ -21,6 +21,8 @@ CITIES = [
 ]
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
+# Avoid `_metadata`, which is reserved by Spark/Delta/Auto Loader for hidden file metadata.
+INGEST_METADATA_KEY = "ingest_metadata"
 
 
 def build_session() -> requests.Session:
@@ -54,7 +56,7 @@ def fetch_city_weather(session: requests.Session, city: dict[str, Any]) -> dict[
     print(f"Kész: {city['name']} ({response.status_code})", flush=True)
 
     payload = response.json()
-    payload["_metadata"] = {
+    payload[INGEST_METADATA_KEY] = {
         "city": city["name"],
         "country": city["country"],
         "ingested_at_utc": datetime.now(timezone.utc).isoformat(),

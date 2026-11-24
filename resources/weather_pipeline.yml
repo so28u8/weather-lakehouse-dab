@@ -5,11 +5,10 @@ resources:
       catalog: ${var.catalog}
       target: medallion
       serverless: true
+      root_path: ../src/pipelines/weather_medallion
       configuration:
         landing_volume_path: ${var.landing_volume_path}
         air_quality_landing_volume_path: ${var.air_quality_landing_volume_path}
       libraries:
-        - file:
-            path: ../src/pipelines/weather_medallion.py
-  
-  
+        - glob:
+            include: ../src/pipelines/weather_medallion/transformations/**
